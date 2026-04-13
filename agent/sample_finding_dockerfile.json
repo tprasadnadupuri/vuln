@@ -1,0 +1,12 @@
+{
+  "scanner": "trivy",
+  "image": "user-crud-lab:latest",
+  "finding": {
+    "severity": "HIGH",
+    "package_name": "base_image",
+    "installed_version": "python:3.11-slim",
+    "fixed_version": "python:3.11-slim-bookworm",
+    "type": "base_image",
+    "file": "Dockerfile"
+  }
+}

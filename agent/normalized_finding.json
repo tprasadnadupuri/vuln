@@ -1,0 +1,12 @@
+{
+  "scanner": "trivy",
+  "image": "user-crud-lab:latest",
+  "finding": {
+    "severity": "MEDIUM",
+    "package_name": "libssl3",
+    "installed_version": "3.0.18-1~deb12u2",
+    "fixed_version": "3.0.19-1~deb12u2",
+    "type": "os_package",
+    "file": "Dockerfile"
+  }
+}

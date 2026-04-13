@@ -1,0 +1,14 @@
+{
+  "eligible": true,
+  "change_type": "replace_line_contains",
+  "operations": [
+    {
+      "op": "replace_line_contains",
+      "target_file": "Dockerfile",
+      "contains": "FROM python:3.11-slim",
+      "replace_line": "FROM python:3.11-slim-bookworm"
+    }
+  ],
+  "requires_human_review": false,
+  "reason": "Updating base image to the latest version as per the finding."
+}
