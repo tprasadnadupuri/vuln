@@ -16,7 +16,7 @@ def load_finding(path: str) -> dict:
 
 def build_prompt(finding: dict) -> str:
     return f"""
-You are a remediation planning assistant.
+You are a remediation planning assistant for container vulnerability remediation.
 
 Return ONLY one valid JSON object.
 Do not include markdown.
@@ -30,21 +30,31 @@ operations
 requires_human_review
 reason
 
-Rules:
+Allowed operation types:
+1. replace_exact
+2. replace_line_contains
+3. insert_after_line_contains
+4. manual_review
+
+Important rules:
+
+General:
 - Prefer one bounded change.
 - Do not modify application business logic.
-- Only use these operation types:
-  1. replace_exact
-  2. replace_line_contains
-  3. insert_after_line_contains
-  4. manual_review
+- Do not invent files that do not exist.
+- All operations must target real lines likely to exist in the target file.
 
-Important remediation rules:
-- For python_package findings, prefer changing requirements.txt ONLY IF the package is directly declared there.
-- If the vulnerable python package is not directly declared in requirements.txt, treat it as a transitive dependency and return manual_review.
-- Do not invent package declarations that are not already present.
-- For os_package findings, prefer a Dockerfile base image update if a safe bounded change is possible.
-- If no safe base image update can be inferred, return manual_review.
+For python_package findings:
+- Only use replace_exact for requirements.txt if the vulnerable package is directly declared there.
+- If the vulnerable package is NOT directly declared in requirements.txt, treat it as a transitive dependency.
+- For transitive dependencies, return manual_review.
+- Do not invent a new package declaration in requirements.txt.
+
+For os_package findings:
+- Do NOT use the OS package name (for example libssl3, openssl, zlib) as the "contains" value for Dockerfile edits.
+- Dockerfile edits must target a real Dockerfile line, usually the FROM line.
+- Prefer replacing the Dockerfile FROM line with a newer patched base image tag if a safe bounded change is possible.
+- If no safe base image change can be inferred, return manual_review.
 
 Operation schemas:
 
@@ -78,6 +88,55 @@ Operation schemas:
   "target_file": "requirements.txt",
   "reason": "Transitive dependency or unclear remediation"
 }}
+
+If the finding is python_package and the package is directly in requirements.txt, a good response looks like:
+{{
+  "eligible": true,
+  "change_type": "dependency_fix",
+  "operations": [
+    {{
+      "op": "replace_exact",
+      "target_file": "requirements.txt",
+      "search": "requests==2.28.2",
+      "replace": "requests==2.31.0"
+    }}
+  ],
+  "requires_human_review": false,
+  "reason": "Direct dependency can be safely updated."
+}}
+
+If the finding is python_package but the package appears to be transitive, a good response looks like:
+{{
+  "eligible": false,
+  "change_type": "manual_review",
+  "operations": [
+    {{
+      "op": "manual_review",
+      "target_file": "requirements.txt",
+      "reason": "Package appears transitive and is not directly declared in requirements.txt."
+    }}
+  ],
+  "requires_human_review": true,
+  "reason": "Transitive dependency remediation requires parent dependency analysis."
+}}
+
+If the finding is os_package, a good response looks like:
+{{
+  "eligible": true,
+  "change_type": "base_image_fix",
+  "operations": [
+    {{
+      "op": "replace_line_contains",
+      "target_file": "Dockerfile",
+      "contains": "FROM python:3.11-slim-bookworm",
+      "replace_line": "FROM python:3.11.15-slim-bookworm"
+    }}
+  ],
+  "requires_human_review": true,
+  "reason": "OS-level vulnerability should be addressed through a patched base image."
+}}
+
+If the finding is os_package and the safe base image fix is unclear, return manual_review.
 
 Finding:
 {json.dumps(finding, indent=2)}
