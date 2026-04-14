@@ -27,30 +27,30 @@ def validate():
     run(["docker", "build", "-t", "user-crud-lab:candidate", "."])
 
     container = subprocess.Popen([
-        "docker", "run", "--rm", "-p", "8082:8081", "user-crud-lab:candidate"
+        "docker", "run", "--rm", "-p", "9092:9090", "user-crud-lab:candidate"
     ])
 
     try:
-        r = wait_for_health("http://localhost:8082/health")
+        r = wait_for_health("http://localhost:9092/health")
         print("Health successful:", r.json())
 
         unique_email = f"tulasi-{uuid.uuid4().hex[:8]}@example.com"
         payload = {"name": "Tulasi", "email": unique_email}
 
-        create_resp = requests.post("http://localhost:8082/users", json=payload, timeout=5)
+        create_resp = requests.post("http://localhost:9092/users", json=payload, timeout=5)
         print("Create response status:", create_resp.status_code)
         print("Create response body:", create_resp.text)
         create_resp.raise_for_status()
         created_user = create_resp.json()
         print("Create user successful:", created_user)
 
-        list_resp = requests.get("http://localhost:8082/users", timeout=5)
+        list_resp = requests.get("http://localhost:9092/users", timeout=5)
         list_resp.raise_for_status()
         users = list_resp.json()
         print("List users successful:", users)
 
         user_id = created_user["id"]
-        get_resp = requests.get(f"http://localhost:8082/users/{user_id}", timeout=5)
+        get_resp = requests.get(f"http://localhost:9092/users/{user_id}", timeout=5)
         get_resp.raise_for_status()
         print("Get user successful:", get_resp.json())
 
