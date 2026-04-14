@@ -38,18 +38,13 @@ Rules:
   2. replace_line_contains
   3. insert_after_line_contains
   4. manual_review
-- For python_package findings, prefer changing requirements.txt.
-- For base_image findings, prefer changing the Dockerfile FROM line.
-- If the change is risky or unclear, return:
-  "eligible": false
-  "change_type": "manual_review"
-  "operations": [
-    {{
-      "op": "manual_review",
-      "target_file": "{finding["finding"].get("file", "")}",
-      "reason": "..."
-    }}
-  ]
+
+Important remediation rules:
+- For python_package findings, prefer changing requirements.txt ONLY IF the package is directly declared there.
+- If the vulnerable python package is not directly declared in requirements.txt, treat it as a transitive dependency and return manual_review.
+- Do not invent package declarations that are not already present.
+- For os_package findings, prefer a Dockerfile base image update if a safe bounded change is possible.
+- If no safe base image update can be inferred, return manual_review.
 
 Operation schemas:
 
@@ -58,15 +53,15 @@ Operation schemas:
   "op": "replace_exact",
   "target_file": "requirements.txt",
   "search": "requests==2.28.2",
-  "replace": "requests==2.32.3"
+  "replace": "requests==2.31.0"
 }}
 
 2) replace_line_contains
 {{
   "op": "replace_line_contains",
   "target_file": "Dockerfile",
-  "contains": "FROM python:3.11-slim",
-  "replace_line": "FROM python:3.11-slim-bookworm"
+  "contains": "FROM python:3.11-slim-bookworm",
+  "replace_line": "FROM python:3.11.15-slim-bookworm"
 }}
 
 3) insert_after_line_contains
@@ -80,8 +75,8 @@ Operation schemas:
 4) manual_review
 {{
   "op": "manual_review",
-  "target_file": "Dockerfile",
-  "reason": "Major version change may be risky."
+  "target_file": "requirements.txt",
+  "reason": "Transitive dependency or unclear remediation"
 }}
 
 Finding:
