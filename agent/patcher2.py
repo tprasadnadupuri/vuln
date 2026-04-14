@@ -80,7 +80,14 @@ def replace_line_contains(target_file: str, contains: str, replace_line: str):
             new_lines.append(line)
 
     if not replaced:
-        raise ValueError(f"Could not find line containing {contains!r} in {target_file}")
+        print("=== Current file content ===")
+        print(path.read_text())
+        print("=== Expected contains value ===")
+        print(contains)
+        raise ValueError(
+            f"Could not find line containing {contains!r} in {target_file}. "
+            f"This usually means the remediation plan targeted a package name instead of a real Dockerfile line."
+        )
 
     path.write_text("\n".join(new_lines) + "\n")
     print(f"Applied replace_line_contains to {target_file}")
@@ -100,6 +107,10 @@ def insert_after_line_contains(target_file: str, contains: str, new_line: str):
             inserted = True
 
     if not inserted:
+        print("=== Current file content ===")
+        print(path.read_text())
+        print("=== Expected contains value ===")
+        print(contains)
         raise ValueError(f"Could not find line containing {contains!r} in {target_file}")
 
     path.write_text("\n".join(result) + "\n")
@@ -143,7 +154,9 @@ def apply_operation(op: dict):
         )
 
     elif op_type == "manual_review":
-        raise ValueError(f"Manual review requested for {op.get('target_file')}: {op.get('reason')}")
+        raise ValueError(
+            f"Manual review requested for {op.get('target_file')}: {op.get('reason')}"
+        )
 
     else:
         raise ValueError(f"Unsupported operation type: {op_type}")
