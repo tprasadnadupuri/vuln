@@ -92,7 +92,7 @@ def collect_candidates(report: dict, mode: str) -> list[dict]:
 
 def build_normalized_finding(report: dict, mode: str, preferred_package: str | None = None) -> dict:
     candidates = collect_candidates(report, mode)
-    chosen = choose_best(candidates, preferred_package=preferred_package)
+    chosen = choose_best(candidates, preferred_package)
 
     if not chosen:
         raise ValueError(f"No suitable {mode} vulnerability with fixed version found in trivy-report.json")
