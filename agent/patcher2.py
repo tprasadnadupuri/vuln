@@ -35,6 +35,20 @@ def backup_file(target_file: str):
     print(f"Backup created: {backup}")
 
 
+def package_declared_in_requirements(package_name: str, file_path: str = "requirements.txt") -> bool:
+    lines = Path(file_path).read_text().splitlines()
+
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        if line.lower().startswith(package_name.lower() + "=="):
+            return True
+
+    return False
+
+
 def replace_exact(target_file: str, search: str, replace: str):
     path = Path(target_file)
     content = path.read_text()
@@ -96,25 +110,41 @@ def apply_operation(op: dict):
     op_type = op["op"]
 
     if op_type == "replace_exact":
+        target_file = op["target_file"]
+        search = op["search"]
+        replace = op["replace"]
+
+        package_name = search.split("==")[0].strip()
+
+        if target_file == "requirements.txt" and not package_declared_in_requirements(package_name, target_file):
+            raise ValueError(
+                f"{package_name!r} is not directly declared in {target_file}. "
+                f"This looks like a transitive dependency and should go to manual review."
+            )
+
         replace_exact(
-            target_file=op["target_file"],
-            search=op["search"],
-            replace=op["replace"]
+            target_file=target_file,
+            search=search,
+            replace=replace
         )
+
     elif op_type == "replace_line_contains":
         replace_line_contains(
             target_file=op["target_file"],
             contains=op["contains"],
             replace_line=op["replace_line"]
         )
+
     elif op_type == "insert_after_line_contains":
         insert_after_line_contains(
             target_file=op["target_file"],
             contains=op["contains"],
             new_line=op["new_line"]
         )
+
     elif op_type == "manual_review":
         raise ValueError(f"Manual review requested for {op.get('target_file')}: {op.get('reason')}")
+
     else:
         raise ValueError(f"Unsupported operation type: {op_type}")
 
